@@ -4,7 +4,6 @@
 
 const O              = Object,
       isBrowser      = (typeof window !== 'undefined') && (window.window === window) && window.navigator,
-      nodeRequire    = isBrowser ? null : module.require, // to prevent bundlers from expanding the require call
       lastOf         = x => x[x.length - 1],
       getSource      = require ('get-source'),
       partition      = require ('./impl/partition'),
@@ -17,10 +16,10 @@ const O              = Object,
 class StackTracey {
 
     constructor (input, offset) {
-        
+
         const originalInput          = input
             , isParseableSyntaxError = input && (input instanceof SyntaxError && !isBrowser)
-                
+
     /*  new StackTracey ()            */
 
         if (!input) {
@@ -45,8 +44,8 @@ class StackTracey {
         if (Array.isArray (input)) {
 
             if (isParseableSyntaxError) {
-                
-                const rawLines = nodeRequire ('util').inspect (originalInput).split ('\n')
+
+                const rawLines = module.require('util').inspect (originalInput).split ('\n')
                     , fileLine = rawLines[0].split (':')
                     , line = fileLine.pop ()
                     , file = fileLine.join (':')
@@ -95,14 +94,14 @@ class StackTracey {
 
     decomposePath (fullPath) {
         let result = fullPath
-        
+
         if (isBrowser) result = result.replace (pathRoot, '')
 
         const externalDomainMatch = result.match (/^(http|https)\:\/\/?([^\/]+)\/(.*)/)
         const externalDomain = externalDomainMatch ? externalDomainMatch[2] : undefined
         result = externalDomainMatch ? externalDomainMatch[3] : result
 
-        if (!isBrowser) result = nodeRequire ('path').relative (pathRoot, result)
+        if (!isBrowser) result = module.require('path').relative (pathRoot, result)
 
         return [
             nixSlashes(result).replace (/^.*\:\/\/?\/?/, ''), // cut webpack:/// and webpack:/ things
@@ -146,7 +145,7 @@ class StackTracey {
 
         /*  Detect things like Array.reduce
             TODO: detect more built-in types            */
-            
+
             if (callee && !fileLineColumn[0]) {
                 const type = callee.split ('.')[0]
                 if (type === 'Array') {
@@ -177,10 +176,10 @@ class StackTracey {
     }
 
     withSource (loc) {
-        
+
         if (this.shouldSkipResolving (loc)) {
             return loc
-            
+
         } else {
 
             let resolved = getSource (loc.file || '').resolve (loc)
@@ -197,7 +196,7 @@ class StackTracey {
 
         if (this.shouldSkipResolving (loc)) {
             return Promise.resolve (loc)
-            
+
         } else {
             return getSource.async (loc.file || '')
                         .then (x => x.resolve (loc))
@@ -287,7 +286,7 @@ class StackTracey {
 
         const maxColumnWidths = (opts && opts.maxColumnWidths) || this.maxColumnWidths ()
 
-        const trimEnd   = (s, n) => s && ((s.length > n) ? (s.slice (0, n-1) + '…') : s)   
+        const trimEnd   = (s, n) => s && ((s.length > n) ? (s.slice (0, n-1) + '…') : s)
         const trimStart = (s, n) => s && ((s.length > n) ? ('…' + s.slice (-(n-1))) : s)
 
         const trimmed = this.map (
